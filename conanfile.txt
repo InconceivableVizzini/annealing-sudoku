@@ -1,0 +1,6 @@
+[requires]
+stc/3.5.1
+
+[generators]
+CMakeDeps
+CMakeToolchain
