@@ -25,20 +25,18 @@
 // achieved it is easy to try again by choosing a new initial state and
 // increasing the temperature.
 
+#include "sys/random.h"
+#include <errno.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 
-#define i_val uint8_t
-#define i_tag u8
-#include <stc/carr2.h>
-
-#include <stc/cstr.h>
-
-#include "config.h"
 #include "annealing.h"
+#include "config.h"
 #include "interface.h"
+#include "puzzle.h"
 
 int main(int argc, char **argv) {
   if (argc != 10) {
@@ -50,48 +48,91 @@ int main(int argc, char **argv) {
 
   initialize_user_interface();
 
-  c_autovar(carr2_u8 given_positions = carr2_u8_with_values(9, 9, 1),
-            carr2_u8_drop(&given_positions))
-  c_autovar(carr2_u8 n_by_n = carr2_u8_with_values(9, 9, 0),
-                carr2_u8_drop(&n_by_n))
-  {
-    for (size_t i = 0; i < 9; i++) {
-      for (size_t j = 0; j < 9; j++) {
-        n_by_n.data[i][j] = argv[i + 1][j] - '0';
-        given_positions.data[i][j] = (n_by_n.data[i][j] != 0);
-      }
-    }
+  // Storage for the 9 x 9 puzzle state
+  carr2_u8 given_puzzle_positions = carr2_u8_with_values(9, 9, 1);
+  carr2_u8 n_by_n = carr2_u8_with_values(9, 9, 0);
 
-    annealing_state puzzle_state = {
-        .annealing = true,
-        .temperature =
-            estimate_initial_temperature(n_by_n.data, given_positions.data),
-        .sudoku_puzzle_state = n_by_n.data,
-        .given_puzzle_positions = given_positions.data};
-
-    
-    update_user_interface(&puzzle_state);
-
-    // Display the unsolved puzzle
-    wait_for_user_input();
-
-    clock_t start, current;
-    start = clock();
-    while (puzzle_state.annealing) {
-      update_annealing_state(&puzzle_state);
-
-      current = clock();
-      if (((double)(current - start)) / CLOCKS_PER_SEC > 1.0) {
-        update_user_interface(&puzzle_state);
-        start = current;
-      }
+  // Load initial puzzle state from ARGV
+  for (size_t i = 0; i < 9; i++) {
+    for (size_t j = 0; j < 9; j++) {
+      n_by_n.data[i][j] = argv[i + 1][j] - '0';
+      given_puzzle_positions.data[i][j] = (n_by_n.data[i][j] != 0);
     }
   }
 
+  // Storage for a copy of the unsolved state, used to reset
+  // the annealing process.
+  carr2_u8 initial_puzzle_positions = carr2_u8_init(9, 9);
+
+  annealing_state puzzle_state = {
+      .annealing = true,
+      .temperature = 0,
+      .initial_puzzle_state = &initial_puzzle_positions,
+      .sudoku_puzzle_state = &n_by_n,
+      .given_puzzle_positions = &given_puzzle_positions,
+      .number_of_state_changes = 0,
+      .sudoku_puzzle_state_cost = 9999,
+      .random_number_generator_state = {0}};
+
+  carr2_u8_copy(&initial_puzzle_positions, n_by_n);
+
+  // Seed the random number generator with random data generated
+  // by the system.
+  if (getrandom(puzzle_state.random_number_generator_state,
+                sizeof(puzzle_state.random_number_generator_state), 0) < 1) {
+    return EXIT_FAILURE;
+  }
+
+  // Display the unsolved puzzle
+  update_user_interface(&puzzle_state);
+  wait_for_user_input();
+
+  // Fill each 3x3 region of numbers randomly while maintaining the invariant
+  // that each such region cannot contain duplicate numbers. This invariant will
+  // be maintained when producing new puzzle states by swapping two numbers in a
+  // region.
+  fill_puzzle_regions(&puzzle_state);
+
+  puzzle_state.sudoku_puzzle_state_cost =
+      cost(puzzle_state.sudoku_puzzle_state->data);
+
+  puzzle_state.temperature = estimate_initial_temperature(&puzzle_state);
+
+  clock_t start = clock();
+  clock_t current = clock();
+
+  while (puzzle_state.annealing) {
+    update_annealing_state(&puzzle_state);
+
+    current = clock();
+    if (((double)(current - start)) / CLOCKS_PER_SEC > 1.0) {
+      update_user_interface(&puzzle_state);
+      start = current;
+    }
+  }
+
+  // Avoid a sudden update at the end by waiting until a full second has
+  // elapsed.
+  struct timespec part_of_a_second;
+  part_of_a_second.tv_sec = 0;
+  part_of_a_second.tv_nsec =
+      1000000000 -
+      (1000000000 * ((double)(current - start) / CLOCKS_PER_SEC));
+
+  int was_interrupted;
+  do {
+    was_interrupted = nanosleep(&part_of_a_second, &part_of_a_second);
+  } while (was_interrupted && errno == EINTR);
+
   // Display the solved puzzle
+  update_user_interface(&puzzle_state);
   wait_for_user_input();
 
   deinitialize_user_interface();
+
+  carr2_u8_drop(&initial_puzzle_positions);
+  carr2_u8_drop(&n_by_n);
+  carr2_u8_drop(&given_puzzle_positions);
 
   return EXIT_SUCCESS;
 }
