@@ -221,17 +221,18 @@ void blit_sudoku_numbers(annealing_state *state) {
       ncplane_set_fg_rgb8(sudoku_state_plane, 115, 147, 179);
       ncplane_set_bg_rgb8(sudoku_state_plane, 0xff, 0xff, 0xff);
 
-      if (state->given_puzzle_positions[y][x] == 0) {
+      if (state->given_puzzle_positions->data[y][x] == 0) {
         ncplane_set_fg_rgb8(sudoku_state_plane, 46, 139, 87);
         ncplane_set_bg_rgb8(sudoku_state_plane, 0xff, 0xff, 0xff);
       }
 
-      cstr number_at_yx = cstr_from_fmt("%d", state->sudoku_puzzle_state[y][x]);
+      cstr number_at_yx =
+          cstr_from_fmt("%d", state->sudoku_puzzle_state->data[y][x]);
       ncplane_putstr_yx(sudoku_state_plane, y + vertical_offset,
                         x + horizontal_offset, cstr_str(&number_at_yx));
       c_drop(cstr, &number_at_yx);
 
-      if (state->given_puzzle_positions[y][x] == 0) {
+      if (state->given_puzzle_positions->data[y][x] == 0) {
         ncplane_set_fg_rgb8(sudoku_state_plane, 0, 0, 0);
         ncplane_set_bg_rgb8(sudoku_state_plane, 0xff, 0xff, 0xff);
       }
@@ -243,6 +244,24 @@ void blit_sudoku_numbers(annealing_state *state) {
     horizontal_offset = 1;
     vertical_offset++;
   }
+
+  unsigned xlen;
+  unsigned ylen;
+  ncplane_dim_yx(standard_plane, &ylen, &xlen);
+
+  cstr temperature = cstr_from_fmt("%.4f°", state->temperature);
+
+  ncplane_putstr_yx(standard_plane, (ylen / 2.0) + (BOARD_HEIGHT / 2) + 2,
+                    (xlen / 2.0) - (BOARD_WIDTH / 2) + 2,
+                     cstr_str(&temperature));
+  c_drop(cstr, &temperature);
+
+  cstr cost = cstr_from_fmt("$%04d", state->sudoku_puzzle_state_cost);
+
+  ncplane_putstr_yx(standard_plane, (ylen / 2.0) + (BOARD_HEIGHT / 2) + 3,
+                    (xlen / 2.0) - (BOARD_WIDTH / 2) + 2,
+                    cstr_str(&cost));
+  c_drop(cstr, &cost);
 }
 
 void update_user_interface(annealing_state *state) {
