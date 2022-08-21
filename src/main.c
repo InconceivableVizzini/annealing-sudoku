@@ -29,9 +29,9 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <stdio.h>
 
 #include "annealing.h"
 #include "config.h"
@@ -52,6 +52,10 @@ int main(int argc, char **argv) {
   carr2_u8 given_puzzle_positions = carr2_u8_with_values(9, 9, 1);
   carr2_u8 n_by_n = carr2_u8_with_values(9, 9, 0);
 
+  // Storage for a copy of the unsolved state, used to reset
+  // the annealing process.
+  carr2_u8 initial_puzzle_positions = carr2_u8_init(9, 9);
+
   // Load initial puzzle state from ARGV
   for (size_t i = 0; i < 9; i++) {
     for (size_t j = 0; j < 9; j++) {
@@ -60,21 +64,17 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Storage for a copy of the unsolved state, used to reset
-  // the annealing process.
-  carr2_u8 initial_puzzle_positions = carr2_u8_init(9, 9);
+  carr2_u8_copy(&initial_puzzle_positions, n_by_n);
 
   annealing_state puzzle_state = {
       .annealing = true,
-      .temperature = 0,
+      .temperature = 1.0,
       .initial_puzzle_state = &initial_puzzle_positions,
       .sudoku_puzzle_state = &n_by_n,
       .given_puzzle_positions = &given_puzzle_positions,
       .number_of_state_changes = 0,
       .sudoku_puzzle_state_cost = 9999,
       .random_number_generator_state = {0}};
-
-  carr2_u8_copy(&initial_puzzle_positions, n_by_n);
 
   // Seed the random number generator with random data generated
   // by the system.
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
   wait_for_user_input();
 
   // Fill each 3x3 region of numbers randomly while maintaining the invariant
-  // that each such region cannot contain duplicate numbers. This invariant will
+  // that each region cannot contain duplicate numbers. This invariant will
   // be maintained when producing new puzzle states by swapping two numbers in a
   // region.
   fill_puzzle_regions(&puzzle_state);
@@ -96,8 +96,7 @@ int main(int argc, char **argv) {
   puzzle_state.sudoku_puzzle_state_cost =
       cost(puzzle_state.sudoku_puzzle_state->data);
 
-  puzzle_state.temperature = estimate_initial_temperature(&puzzle_state);
-
+  // Track time to limit UI updates to one update per second.
   clock_t start = clock();
   clock_t current = clock();
 
@@ -111,18 +110,18 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Avoid a sudden update at the end by waiting until a full second has
-  // elapsed.
-  struct timespec part_of_a_second;
-  part_of_a_second.tv_sec = 0;
-  part_of_a_second.tv_nsec =
-      1000000000 -
-      (1000000000 * ((double)(current - start) / CLOCKS_PER_SEC));
+  // Avoid a sudden update at the end of annealing by waiting until a full
+  // second has elapsed since the last UI update.
+  struct timespec part_of_a_second = {
+    .tv_sec = 0,
+    .tv_nsec =
+        1000000000 - (1000000000 * ((double)(current - start) / CLOCKS_PER_SEC))
+  };
 
-  int was_interrupted;
+  int possibly_interrupted;
   do {
-    was_interrupted = nanosleep(&part_of_a_second, &part_of_a_second);
-  } while (was_interrupted && errno == EINTR);
+    possibly_interrupted = nanosleep(&part_of_a_second, &part_of_a_second);
+  } while (possibly_interrupted && errno == EINTR);
 
   // Display the solved puzzle
   update_user_interface(&puzzle_state);

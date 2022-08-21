@@ -9,7 +9,7 @@ void fill_region(annealing_state *annealing_state, size_t region) {
   c_apply(n, clist_u8_push_back(&list_of_available_numbers, n), uint_fast8_t,
           {1, 2, 3, 4, 5, 6, 7, 8, 9});
 
-  // Randomly XOR swap elements in the list of available numbers.
+  // Randomly swap elements in the list of available numbers.
   for (size_t i = 0; i < 8; ++i) {
     uint_fast8_t index =
         random_uint32_t(annealing_state->random_number_generator_state) %
@@ -27,13 +27,14 @@ void fill_region(annealing_state *annealing_state, size_t region) {
     clist_u8_iter current_number_iter =
         clist_u8_begin(&list_of_available_numbers);
     current_number_iter = clist_u8_advance(current_number_iter, i);
+
+    const uint_fast8_t current_number_value = *current_number_iter.ref;
+
     clist_u8_iter some_number_iter = clist_u8_begin(&list_of_available_numbers);
     some_number_iter = clist_u8_advance(some_number_iter, index);
 
-    // XOR swap
-    *current_number_iter.ref = *current_number_iter.ref ^ *some_number_iter.ref;
-    *some_number_iter.ref = *some_number_iter.ref ^ *current_number_iter.ref;
-    *current_number_iter.ref = *current_number_iter.ref ^ *some_number_iter.ref;
+    *current_number_iter.ref = *some_number_iter.ref;
+    *some_number_iter.ref = current_number_value;
   }
 
   // Create a list of available numbers and a list of positions that need to be

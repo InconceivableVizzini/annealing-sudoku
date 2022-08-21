@@ -24,8 +24,6 @@ struct annealing_state {
 
 typedef struct annealing_state annealing_state;
 
-double estimate_initial_temperature(annealing_state *state);
-
 void update_annealing_state(annealing_state *state);
 
 uint32_t cost(uint_fast8_t **state);
