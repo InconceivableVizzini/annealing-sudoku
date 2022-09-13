@@ -21,9 +21,8 @@
 //      \f$s \leftarrow s_{new}\f$
 //  Return \f$s\f$
 //
-// Similar to annealing processes in metallurgy if a desired result is not
-// achieved it is easy to try again by choosing a new initial state and
-// increasing the temperature.
+// If a desired result is not achieved it is easy to try again by choosing a new
+// initial state and increasing the temperature.
 
 #include "sys/random.h"
 #include <errno.h>
@@ -113,10 +112,9 @@ int main(int argc, char **argv) {
   // Avoid a sudden update at the end of annealing by waiting until a full
   // second has elapsed since the last UI update.
   struct timespec part_of_a_second = {
-    .tv_sec = 0,
-    .tv_nsec =
-        1000000000 - (1000000000 * ((double)(current - start) / CLOCKS_PER_SEC))
-  };
+      .tv_sec = 0,
+      .tv_nsec = 1000000000 -
+                 (1000000000 * ((double)(current - start) / CLOCKS_PER_SEC))};
 
   int possibly_interrupted;
   do {

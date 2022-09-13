@@ -1,3 +1,3 @@
-# A sudoku solving program
+# A sudoku solver
 
-This is a C program used to visualize solving a sudoku via a simulated annealing process. The program is not intended to be portable, the only target is my own machine.
+This program solves sudoku puzzles via simulated annealing. This is a quickly produced program intended to learn about monte carlo simulation, not an exercise in producing quality portable software. The code was automatically formatted by clang-format using the Chromium project's style.

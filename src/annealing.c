@@ -44,7 +44,7 @@ static void select_neighbouring_state(annealing_state *state,
         random_uint32_t(state->random_number_generator_state) % 3;
   }
 
-  const uint_fast8_t some_cell_value =
+  const uint8_t some_cell_value =
       new_state->data[((region / 3) * 3) + some_cell_row]
                      [((region % 3) * 3) + some_cell_column];
   new_state->data[((region / 3) * 3) + some_cell_row]
@@ -56,7 +56,7 @@ static void select_neighbouring_state(annealing_state *state,
       some_cell_value;
 }
 
-uint32_t cost(uint_fast8_t **state) {
+uint32_t cost(uint8_t **state) {
   uint32_t cost = 0;
   for (size_t i = 0; i < 9; i++) {
     clist_u8 found_row_nums = clist_u8_init();
@@ -88,8 +88,8 @@ uint32_t cost(uint_fast8_t **state) {
   return cost;
 }
 
-// If a solution was not found quickly with the fast annealing schedule reset
-// the annealing state to a new random initial configuration.
+// If a solution was not found quickly with the fast annealing schedule then
+// reset the annealing state to a new random initial configuration.
 static void reheat(annealing_state *state) {
   state->number_of_state_changes = 0;
   carr2_u8_copy(state->sudoku_puzzle_state, *(state->initial_puzzle_state));
