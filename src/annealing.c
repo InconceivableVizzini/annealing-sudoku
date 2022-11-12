@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ISC
+
 #include "annealing.h"
 #include "rng.h"
 #include <math.h>

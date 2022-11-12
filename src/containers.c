@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ISC
+
 #define STC_IMPLEMENTATION
 
 #include <stc/cstr.h>

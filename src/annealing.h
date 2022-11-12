@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ISC
+
 #pragma once
 
 #include <inttypes.h>

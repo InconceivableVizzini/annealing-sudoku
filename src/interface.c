@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ISC
+
 #include "interface.h"
 #include <notcurses/notcurses.h>
 #include <stc/cstr.h>

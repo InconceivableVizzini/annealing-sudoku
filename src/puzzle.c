@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ISC
+
 #include "puzzle.h"
 #include "rng.h"
 

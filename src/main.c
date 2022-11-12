@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: ISC
+
 // This program solves sudoku puzzles using a global optimization technique
 // called Simulated Annealing, a type of Markov chain Monte Carlo algorithm.
 
