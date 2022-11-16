@@ -8,7 +8,7 @@ configure_file(src/config.h.in config.h @ONLY)
 
 find_package(stc)
 
-add_compile_options(-pedantic -Wall -Wextra -Werror -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition)
+add_compile_options(-Wall -Wextra -Werror -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition)
 
 add_subdirectory(src)
 
